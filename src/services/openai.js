@@ -17,17 +17,26 @@ const generateCompanyResearch = async (companyName, userRole = 'basic') => {
         }
 
         const prompts = {
-            basic: `You are a B2B sales expert. Research the company "${companyName}" and provide comprehensive information in JSON format.
+            basic: `You are a B2B sales expert with access to real company data. Research the REAL company "${companyName}" and provide ACCURATE, VERIFIED information in JSON format.
+
+IMPORTANT: Only provide information that you can reasonably verify or that is publicly available. If you cannot find specific details, use "Not available" rather than making up fake information.
 
 Please analyze and provide the following information about ${companyName}:
 
-1. Company Overview - A detailed description of what the company does
-2. Pain Points - 3 key business challenges they likely face
+1. Company Overview - A detailed description of what the company actually does
+2. Pain Points - 3 realistic business challenges they likely face based on their industry
 3. Custom Sales Pitch - A tailored B2B sales pitch for your services
-4. Decision Makers - Key people involved in purchasing decisions
-5. Technologies - Technologies they likely use
-6. Contact Information - Website, emails, social media
-7. Company Details - Industry, size, location, etc.
+4. Decision Makers - Realistic job titles (not specific names)
+5. Technologies - Technologies they likely use based on their industry
+6. Contact Information - REAL website, realistic email formats, actual LinkedIn if known
+7. Company Details - Actual industry, realistic size, real location if known
+
+CRITICAL CONTACT INFO RULES:
+- website: Use the company's ACTUAL website if known, otherwise use realistic format
+- emails: Use realistic email formats based on actual domain (info@domain.com, contact@domain.com)
+- phones: Use realistic phone number format for their region, or "Not available"
+- linkedin: Use actual LinkedIn company page if known, otherwise "Not available"
+- address: Use actual headquarters location if known, otherwise "Not available"
 
 Return your response as a valid JSON object with these exact keys:
 - companyOverview (string)
@@ -40,18 +49,28 @@ Return your response as a valid JSON object with these exact keys:
 
 Make sure your response is properly formatted JSON.`,
 
-            premium: `You are a senior B2B sales strategist. Conduct an in-depth analysis of "${companyName}" and provide detailed insights in JSON format.
+            premium: `You are a senior B2B sales strategist with access to comprehensive company databases. Conduct an in-depth analysis of the REAL company "${companyName}" and provide ACCURATE, VERIFIED insights in JSON format.
+
+CRITICAL INSTRUCTION: Only provide information that you can verify or that is publicly available. Use "Not available" for information you cannot confirm rather than generating fake data.
 
 Please provide comprehensive analysis including:
 
-1. Detailed Company Overview - In-depth analysis of business model, market position
-2. Pain Points - 5 specific business challenges with context
-3. Custom Sales Pitch - Sophisticated, personalized pitch
-4. Decision Makers - 7 key stakeholders with their roles
-5. Technologies - 8 technologies they use or need
-6. Contact Information - Complete contact details
-7. Company Details - Detailed company information including revenue estimates
-8. Additional Insights - Market trends, competitive landscape, recent developments
+1. Detailed Company Overview - In-depth analysis of actual business model, market position
+2. Pain Points - 5 specific business challenges based on their actual industry and size
+3. Custom Sales Pitch - Sophisticated, personalized pitch based on real company profile
+4. Decision Makers - 7 realistic job titles (not specific names) appropriate for their company size
+5. Technologies - 8 technologies they actually use or likely need based on their industry
+6. Contact Information - VERIFIED contact details including real website, proper emails, actual LinkedIn
+7. Company Details - ACTUAL detailed company information including realistic revenue estimates
+8. Additional Insights - Real market trends, competitive landscape, factual recent developments
+
+CONTACT INFORMATION REQUIREMENTS:
+- website: Must be the company's ACTUAL website (research their real domain)
+- emails: Use proper email formats with their real domain (info@realdomain.com)
+- phones: Real phone number format for their country/region, or "Not available"
+- linkedin: Actual LinkedIn company page URL if it exists, otherwise "Not available"
+- address: Real headquarters address if publicly available, otherwise "Not available"
+- socialMedia: Only list platforms they actually use
 
 Return your response as a valid JSON object with these exact keys:
 - companyOverview (string)
@@ -73,7 +92,7 @@ Make sure your response is properly formatted JSON.`
             messages: [
                 {
                     role: 'system',
-                    content: 'You are an expert B2B sales researcher. Always respond with valid JSON format containing the requested information about companies.'
+                    content: 'You are an expert B2B sales researcher with access to real company data. CRITICAL: Only provide accurate, verifiable information about companies. Use "Not available" for information you cannot verify rather than creating fake details. Focus on providing realistic, industry-appropriate insights based on publicly available information. Always respond with valid JSON format.'
                 },
                 {
                     role: 'user',
@@ -88,7 +107,28 @@ Make sure your response is properly formatted JSON.`
         const responseContent = completion.choices[0].message.content;
         const parsedResults = JSON.parse(responseContent);
 
-        const cleanCompanyName = companyName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
+        // Only add fallback data if the AI didn't provide specific information
+        // Avoid creating fake contact details
+        if (!parsedResults.contactInfo || Object.keys(parsedResults.contactInfo).length === 0) {
+            parsedResults.contactInfo = {
+                website: "Not available - Please search online",
+                emails: ["Contact information not publicly available"],
+                phones: ["Not available"],
+                linkedin: "Not available - Search LinkedIn directly",
+                socialMedia: ["Information not available"],
+                address: "Not available - Check company website"
+            };
+        } else {
+            // Clean up any obviously fake or template data
+            if (parsedResults.contactInfo.website && parsedResults.contactInfo.website.includes('${cleanCompanyName}')) {
+                parsedResults.contactInfo.website = "Not available - Please search online";
+            }
+            if (parsedResults.contactInfo.linkedin && parsedResults.contactInfo.linkedin.includes('${cleanCompanyName}')) {
+                parsedResults.contactInfo.linkedin = "Not available - Search LinkedIn directly";
+            }
+        }
+
+        // Add realistic fallbacks for other required fields only if missing
         parsedResults.painPoints ||= [
             'Digital transformation and technology modernization challenges',
             'Operational efficiency and cost optimization needs',
@@ -100,7 +140,9 @@ Make sure your response is properly formatted JSON.`
             'Chief Technology Officer (CTO)',
             'Chief Financial Officer (CFO)',
             'VP of Sales & Marketing',
-            'Director of Operations'
+            'Director of Operations',
+            'Head of Procurement',
+            'Chief Operating Officer (COO)'
         ].slice(0, userRole === 'premium' ? 7 : 5);
 
         parsedResults.technologies ||= [
@@ -108,30 +150,24 @@ Make sure your response is properly formatted JSON.`
             'ERP Systems',
             'Cloud Platforms (AWS/Azure)',
             'Business Intelligence Tools',
-            'Project Management Software'
+            'Project Management Software',
+            'Email Marketing Platforms',
+            'Data Analytics Tools',
+            'Cybersecurity Solutions'
         ].slice(0, userRole === 'premium' ? 8 : 5);
 
-        parsedResults.contactInfo ||= {
-            website: `https://www.${cleanCompanyName}.com`,
-            emails: [`info@${cleanCompanyName}.com`, `contact@${cleanCompanyName}.com`, `sales@${cleanCompanyName}.com`],
-            phones: ['+1-XXX-XXX-XXXX'],
-            linkedin: `https://linkedin.com/company/${cleanCompanyName}`,
-            socialMedia: ['LinkedIn', 'Twitter', 'Facebook'],
-            address: `${companyName} HQ, Business District, City`
-        };
-
         parsedResults.companyDetails ||= {
-            industry: 'Technology',
-            size: '100-500 employees',
-            headquarters: 'USA',
-            founded: '2000s',
-            businessModel: 'B2B'
+            industry: 'Industry information not available',
+            size: 'Company size not specified',
+            headquarters: 'Location not available',
+            founded: 'Founded date not available',
+            businessModel: 'Business model not specified'
         };
 
         if (userRole === 'premium') {
-            parsedResults.companyDetails.revenue ||= '$10M - $50M';
-            parsedResults.companyDetails.recentNews ||= 'Recently expanded into new markets.';
-            parsedResults.additionalInsights ||= 'Industry is shifting towards AI and automation. Competitive landscape is tightening.';
+            parsedResults.companyDetails.revenue ||= 'Revenue information not publicly available';
+            parsedResults.companyDetails.recentNews ||= 'Recent news not available';
+            parsedResults.additionalInsights ||= 'Additional market insights require further research with verified data sources.';
         }
 
         return {
