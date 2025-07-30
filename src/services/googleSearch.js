@@ -178,12 +178,17 @@ const searchDecisionMakersWithGoogle = async (companyName) => {
             `"${companyName}" leadership team management site:${companyName.toLowerCase().replace(/\s+/g, '')}.com`,
             `"${companyName}" "about us" "our team" CEO founder management`,
             `"${companyName}" executives "leadership team" "management team"`,
-            // Specific patterns for well-known companies
-            `"${companyName}" "Elon Musk" CEO founder`,
-            `"${companyName}" "CEO" "founder" "executive" -"former" -"ex-"`,
+            // Company-specific patterns
+            `"${companyName}" "CEO" "founder" "executive" -"former" -"ex-" site:${companyName.toLowerCase().replace(/\s+/g, '')}.com`,
             `"${companyName}" management team executives site:crunchbase.com`,
             `"${companyName}" leadership executives site:bloomberg.com`,
-            `"${companyName}" CEO founder site:forbes.com`
+            `"${companyName}" CEO founder site:forbes.com`,
+            // More specific search with company domain
+            `site:${companyName.toLowerCase().replace(/\s+/g, '')}.com "CEO" OR "founder" OR "leadership"`,
+            // News and press releases
+            `"${companyName}" "announced" "CEO" OR "founder" OR "leadership" site:reuters.com OR site:bloomberg.com`,
+            // Local business directories for regional companies
+            `"${companyName}" CEO founder site:crunchbase.com OR site:pitchbook.com`
         ];
 
         let allResults = [];
@@ -199,16 +204,8 @@ const searchDecisionMakersWithGoogle = async (companyName) => {
         if (allResults.length > 0) {
             const combinedText = allResults.map(r => `${r.title} ${r.snippet}`).join(' ');
 
-            // More precise name extraction patterns
+            // More precise name extraction patterns - focused on company-specific results
             const namePatterns = [
-                // Specific known executives first
-                /\b(Elon Musk)\b/gi,
-                /\b(Tim Cook)\b/gi,
-                /\b(Sundar Pichai)\b/gi,
-                /\b(Satya Nadella)\b/gi,
-                /\b(Jeff Bezos)\b/gi,
-                /\b(Mark Zuckerberg)\b/gi,
-
                 // Company website patterns - most reliable
                 /(?:CEO|Chief Executive Officer|Founder|Co-Founder|President)[\s:,-]*([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/gi,
                 // "Name, Title" pattern
