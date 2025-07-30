@@ -78,6 +78,15 @@ const generateResearch = async (req, res) => {
     } catch (error) {
         console.error('Research generation error:', error);
 
+        // Handle company validation errors specifically
+        if (error.message.includes('INVALID_COMPANY:')) {
+            return res.status(400).json({
+                error: 'Invalid Company',
+                message: error.message.replace('INVALID_COMPANY: ', ''),
+                type: 'COMPANY_VALIDATION_ERROR'
+            });
+        }
+
         if (error.message.includes('OpenAI') || error.message.includes('API key')) {
             return res.status(503).json({
                 error: 'AI service unavailable',

@@ -5,6 +5,94 @@ const openai = new OpenAI({
 });
 
 /**
+ * Validate if a company name represents a real, existing company
+ * @param {string} companyName - Name of the company to validate
+ * @returns {Object} Validation result with isValid flag and details
+ */
+const validateCompanyExists = async (companyName) => {
+    try {
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OpenAI API key not configured');
+        }
+
+        console.log(`🔍 Validating company existence: ${companyName}`);
+
+        const validationPrompt = `You are a business intelligence expert with comprehensive knowledge of companies worldwide. 
+
+Your task is to determine if "${companyName}" is a REAL, EXISTING company or business entity.
+
+STRICT VALIDATION CRITERIA:
+- The company must be a real, established business entity
+- It should be recognizable from your training data
+- It should not be obviously fake, test, or made-up names
+- It should not be generic terms like "test company", "example corp", "fake business"
+- It should not be random words put together
+- It should not be personal names without clear business context
+
+EXAMPLES OF INVALID COMPANIES:
+- "asdfgh company"
+- "test business"
+- "fake corp"
+- "random name inc"
+- "johndoe enterprise"
+- "xyz123 company"
+- "nonexistent business"
+
+EXAMPLES OF VALID COMPANIES:
+- "Tesla"
+- "Microsoft"
+- "Apple"
+- "Walmart"
+- "Local Pizza Shop" (if it represents a real business type)
+
+Respond with a JSON object containing:
+- isValid: true/false
+- companyType: "public" | "private" | "startup" | "local" | "invalid"
+- reason: Brief explanation of your decision
+- suggestion: If invalid, suggest what the user might have meant (optional)
+
+Be strict in validation - when in doubt, mark as invalid.`;
+
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    role: "system",
+                    content: "You are a business intelligence expert specializing in company validation. You have extensive knowledge of real companies worldwide and can distinguish between legitimate businesses and fake/test names. Always respond in valid JSON format."
+                },
+                {
+                    role: "user",
+                    content: validationPrompt
+                }
+            ],
+            max_tokens: 300,
+            temperature: 0.1, // Low temperature for consistent validation
+            response_format: { type: "json_object" }
+        });
+
+        const responseContent = completion.choices[0].message.content;
+        const validationResult = JSON.parse(responseContent);
+
+        console.log(`✅ Company validation completed for ${companyName}:`, validationResult);
+
+        return {
+            ...validationResult,
+            tokensUsed: completion.usage?.total_tokens || 0
+        };
+
+    } catch (error) {
+        console.error('Company validation error:', error);
+        // If validation fails, assume company is invalid for safety
+        return {
+            isValid: false,
+            companyType: "invalid",
+            reason: "Unable to validate company due to technical error",
+            tokensUsed: 0
+        };
+    }
+};
+
+/**
  * Generate comprehensive company research using only GPT-4o
  * @param {string} companyName - Name of the company to research
  * @param {string} userRole - User's role (basic/premium) for different detail levels
@@ -15,6 +103,15 @@ const generateCompanyResearch = async (companyName, userRole = 'basic') => {
         if (!process.env.OPENAI_API_KEY) {
             throw new Error('OpenAI API key not configured');
         }
+
+        // First, validate if the company exists
+        const validation = await validateCompanyExists(companyName);
+
+        if (!validation.isValid) {
+            throw new Error(`INVALID_COMPANY: ${validation.reason}. Please enter a valid company name.${validation.suggestion ? ` Did you mean: ${validation.suggestion}?` : ''}`);
+        }
+
+        console.log(`🤖 Generating GPT-4o research for validated company: ${companyName} (${userRole} user)`);
 
         const prompts = {
             basic: `You are an expert B2B sales researcher with extensive knowledge of companies worldwide. Analyze the company "${companyName}" using your training data and provide comprehensive, accurate information in JSON format.
@@ -239,12 +336,19 @@ Always respond with valid JSON format and ensure all information is business-foc
         const result = {
             ...parsedResults,
             model: "gpt-4o",
-            tokensUsed: completion.usage?.total_tokens || 0,
-            researchMethod: "GPT-4o Knowledge Base",
+            tokensUsed: (completion.usage?.total_tokens || 0) + (validation.tokensUsed || 0),
+            validationTokens: validation.tokensUsed || 0,
+            researchTokens: completion.usage?.total_tokens || 0,
+            researchMethod: "GPT-4o Knowledge Base with Validation",
+            companyValidation: {
+                isValid: validation.isValid,
+                companyType: validation.companyType,
+                validationReason: validation.reason
+            },
             timestamp: new Date().toISOString()
         };
 
-        console.log(`✅ GPT-4o research completed for ${companyName} - ${completion.usage?.total_tokens || 0} tokens used`);
+        console.log(`✅ GPT-4o research completed for validated company ${companyName} - ${result.tokensUsed} total tokens used (${validation.tokensUsed} validation + ${completion.usage?.total_tokens || 0} research)`);
 
         return result;
 
@@ -331,6 +435,7 @@ Return your response in JSON format with the key "pitch".`;
 };
 
 module.exports = {
+    validateCompanyExists,
     generateCompanyResearch,
     generateAlternativePitch
 };

@@ -67,19 +67,42 @@ const validateCompanyResearch = [
         .trim()
         .isLength({ min: 2, max: 200 })
         .withMessage('Company name must be between 2 and 200 characters')
-        .matches(/^[a-zA-Z0-9\s\-\.\&]+$/)
-        .withMessage('Company name contains invalid characters'),
+        .notEmpty()
+        .withMessage('Company name is required')
+        .custom((value) => {
+            // Basic validation for obviously fake names
+            const invalidPatterns = [
+                /^test\s*\d*/i,
+                /^fake/i,
+                /^example/i,
+                /^sample/i,
+                /asdf/i,
+                /qwerty/i,
+                /^random/i,
+                /^dummy/i,
+                /xyz$/i
+            ];
+
+            for (const pattern of invalidPatterns) {
+                if (pattern.test(value)) {
+                    throw new Error('Please enter a real company name. Test names and placeholder text are not allowed.');
+                }
+            }
+
+            return true;
+        }),
 
     body('companyWebsite')
         .optional()
-        .isURL()
+        .trim()
+        .isURL({ require_protocol: false })
         .withMessage('Please provide a valid website URL'),
 
     body('industry')
         .optional()
         .trim()
         .isLength({ max: 100 })
-        .withMessage('Industry cannot exceed 100 characters'),
+        .withMessage('Industry must be less than 100 characters'),
 
     handleValidationErrors
 ];

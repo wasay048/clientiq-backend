@@ -13,6 +13,8 @@ AI-powered B2B company research tool backend built with Node.js, Express, and Mo
 - 🎯 **Alternative Pitches**: Generate different pitch angles (Premium feature)
 - 🛡️ **Security**: Rate limiting, input validation, and XSS protection
 - 🧠 **AI-Only Approach**: No external APIs required - all research powered by GPT-4o's knowledge base
+- ✅ **Company Validation**: Intelligent validation ensures only real companies are researched
+- 🚫 **Fake Company Detection**: Prevents research on test, fake, or non-existent companies
 
 ## Tech Stack
 
@@ -107,6 +109,14 @@ The server will start on `http://localhost:5001`
 - **Professional Pitches**: Tailored sales approaches based on company profiles
 - **Decision Maker Identification**: Relevant executive roles and titles
 - **Technology Recommendations**: Industry-specific technology suggestions
+- **Company Validation**: AI-powered validation ensures only real companies are researched
+
+### Company Validation System
+- **Intelligent Detection**: GPT-4o validates company authenticity before research
+- **Fake Company Prevention**: Blocks research on test, fake, or non-existent companies
+- **Error Messages**: Clear feedback when invalid companies are entered
+- **Token Tracking**: Separate tracking for validation and research token usage
+- **Validation Types**: Identifies public, private, startup, local, or invalid companies
 
 ### Research Method
 - **Knowledge-Based**: Uses GPT-4o's extensive training data
