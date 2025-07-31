@@ -11,8 +11,8 @@ const generateResearch = async (req, res) => {
 
         console.log(`🔍 Generating GPT-4o research for ${companyName} by user ${req.user.email} (${userRole})`);
 
-        // Generate research using only GPT-4o
-        const aiResults = await generateCompanyResearch(companyName, userRole);
+        // Generate research using GPT-4o with real company data
+        const aiResults = await generateCompanyResearch(companyName, userRole, companyWebsite);
 
         // Create research record
         const research = new Research({
