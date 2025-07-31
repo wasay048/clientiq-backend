@@ -19,46 +19,66 @@ const validateCompanyExists = async (companyName) => {
 
         const validationPrompt = `You are a business intelligence expert with comprehensive knowledge of companies worldwide. 
 
-Your task is to determine if "${companyName}" is a REAL, EXISTING company or business entity.
+Your task is to determine if "${companyName}" represents a PLAUSIBLE business entity that could exist in the real world.
 
-STRICT VALIDATION CRITERIA:
-- The company must be a real, established business entity
-- It should be recognizable from your training data
-- It should not be obviously fake, test, or made-up names
-- It should not be generic terms like "test company", "example corp", "fake business"
-- It should not be random words put together
-- It should not be personal names without clear business context
+VERY INCLUSIVE VALIDATION CRITERIA - ACCEPT ALMOST EVERYTHING:
+- Accept ANY name that could reasonably be a real business (large, small, startup, local, international)
+- Accept technology companies, consulting firms, software companies with ANY creative names
+- Accept companies with modern naming conventions (mixed case, compound words, tech-style names)
+- Accept local businesses, startups, and lesser-known companies from ANY country
+- Accept companies that might exist but aren't globally famous
+- Accept abbreviations, acronyms, and creative business names
+- Accept names that sound like they could be real businesses in ANY industry or country
+- Accept names with country extensions (.pk, .net, .io, .co, etc.)
+- Accept company names from Pakistan, India, Bangladesh, and all other countries
+- Accept technology terms like "Sol", "Tech", "Technologies", "Solutions", "Systems"
 
-EXAMPLES OF INVALID COMPANIES:
-- "asdfgh company"
-- "test business"
-- "fake corp"
-- "random name inc"
-- "johndoe enterprise"
-- "xyz123 company"
-- "nonexistent business"
+ONLY REJECT OBVIOUSLY FAKE/TEST NAMES:
+- Names that are clearly test placeholders ("test company", "example corp", "test123")
+- Random character combinations without meaning ("asdfgh", "qwerty123", "ksdjfksdjf")
+- Clearly nonsensical combinations that couldn't be real businesses
+- Names explicitly stating they are fake ("fake business", "dummy company")
+- Generic placeholders ("company name", "business here", "enter name")
 
-EXAMPLES OF VALID COMPANIES:
-- "Tesla"
-- "Microsoft"
-- "Apple"
-- "Walmart"
-- "Local Pizza Shop" (if it represents a real business type)
+EXAMPLES OF VALID COMPANIES (should be ACCEPTED):
+- "Tesla" (well-known)
+- "Microsoft" (well-known)
+- "arhamSofts" (could be a real tech company)
+- "InsightSol Technologies" (plausible tech company)
+- "TechVision Solutions" (plausible consulting firm)
+- "DataFlow Systems" (plausible software company)
+- "Green Valley Restaurant" (local business)
+- "NexGen Analytics" (startup-style name)
+- "CloudFirst Technologies" (modern tech company)
+- "SmartBiz Solutions" (small business)
+- "InfoTech Solutions" (tech company)
+- "Digital Dynamics" (modern business)
+- "Alpha Systems" (business name)
+- "Omega Solutions" (business name)
+- "TechCorp International" (business name)
+
+EXAMPLES OF INVALID COMPANIES (should be REJECTED):
+- "asdfgh company" (random characters)
+- "test business" (obvious test name)
+- "fake corp" (explicitly fake)
+- "qwerty123 inc" (keyboard mashing)
+- "example business" (placeholder)
+- "ksdjfksdjf solutions" (random characters)
 
 Respond with a JSON object containing:
-- isValid: true/false
-- companyType: "public" | "private" | "startup" | "local" | "invalid"
+- isValid: true/false (be VERY generous - approve anything that could plausibly be a real business)
+- companyType: "public" | "private" | "startup" | "local" | "unknown" | "invalid"
 - reason: Brief explanation of your decision
 - suggestion: If invalid, suggest what the user might have meant (optional)
 
-Be strict in validation - when in doubt, mark as invalid.`;
+Be EXTREMELY INCLUSIVE in validation - when in doubt, mark as VALID if it could reasonably be a real business name from anywhere in the world.`;
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
                 {
                     role: "system",
-                    content: "You are a business intelligence expert specializing in company validation. You have extensive knowledge of real companies worldwide and can distinguish between legitimate businesses and fake/test names. Always respond in valid JSON format."
+                    content: "You are a business intelligence expert specializing in company validation. You are EXTREMELY INCLUSIVE in your approach - accept any name that could reasonably be a real business from anywhere in the world, including startups, local businesses, and lesser-known companies from all countries. Only reject clearly fake, test, or nonsensical names. Always respond in valid JSON format."
                 },
                 {
                     role: "user",
